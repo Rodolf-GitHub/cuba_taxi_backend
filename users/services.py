@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.utils import timezone
 from locations.data import get_municipio  # Importar función
+from datetime import datetime, timedelta
 
 def crear_usuario(username, email, password, first_name="", last_name="", tipo_vehiculo=None, capacidad_pasajeros=None, disponibilidad=None, telefono=None, municipio_id=None):
     """Crea un nuevo usuario con su perfil"""
@@ -80,13 +81,59 @@ def set_disponible(user):
     profile.save()
     return profile
 
+def calcular_tiempo_restante(ultima_disponibilidad):
+    """Calcula los minutos restantes antes de que se desactive la disponibilidad"""
+    try:
+        # Obtener tiempo actual
+        tiempo_actual = timezone.now()
+        
+        # Asegurar que ultima_disponibilidad sea datetime con timezone
+        if isinstance(ultima_disponibilidad, str):
+            from django.utils.dateparse import parse_datetime
+            ultima_disponibilidad = parse_datetime(ultima_disponibilidad)
+        
+        if ultima_disponibilidad.tzinfo is None:
+            ultima_disponibilidad = timezone.make_aware(ultima_disponibilidad)
+            
+        # Calcular tiempo límite (12 horas después de ultima_disponibilidad)
+        tiempo_limite = ultima_disponibilidad + timedelta(hours=12)
+        
+        # Debug prints
+        print("DEBUG - Tiempos:")
+        print(f"Actual: {tiempo_actual}")
+        print(f"Última disponibilidad: {ultima_disponibilidad}")
+        print(f"Límite: {tiempo_limite}")
+        
+        # Si el tiempo actual es menor que la última disponibilidad (fecha futura)
+        if tiempo_actual < ultima_disponibilidad:
+            diferencia = ultima_disponibilidad + timedelta(hours=12) - tiempo_actual
+            minutos_restantes = int(diferencia.total_seconds() / 60)
+            print(f"Tiempo restante para fecha futura: {minutos_restantes} minutos")
+            return minutos_restantes
+            
+        # Si aún no ha pasado el tiempo límite
+        if tiempo_actual < tiempo_limite:
+            diferencia = tiempo_limite - tiempo_actual
+            minutos_restantes = int(diferencia.total_seconds() / 60)
+            print(f"Tiempo restante: {minutos_restantes} minutos")
+            return minutos_restantes
+            
+        print("Tiempo expirado")
+        return 0
+        
+    except Exception as e:
+        print(f"Error en calcular_tiempo_restante: {str(e)}")
+        return 0
+
 def obtener_datos_usuario_perfil(user):
     """Obtiene los datos del usuario y su perfil para la respuesta"""
-    # Verificar que no sea superusuario, excepto al obtener perfil propio
     if user.is_superuser:
         return None
-        
-    # Datos básicos en formato plano
+    
+    # Calcular tiempo restante
+    tiempo_restante = calcular_tiempo_restante(user.profile.ultima_disponibilidad)
+    
+    # Datos básicos
     data = {
         "id": user.id,
         "username": user.username,
@@ -100,6 +147,7 @@ def obtener_datos_usuario_perfil(user):
         "capacidad_pasajeros": user.profile.capacidad_pasajeros,
         "disponibilidad": user.profile.disponibilidad,
         "ultima_disponibilidad": user.profile.ultima_disponibilidad,
+        "tiempo_disponibilidad_restante": tiempo_restante,  # Añadido aquí
         "municipio_id": user.profile.municipio_id
     }
     

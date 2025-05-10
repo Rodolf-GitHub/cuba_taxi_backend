@@ -47,7 +47,7 @@ def registrar_usuario(request, data: CrearUsuarioSchema):
     
     return obtener_datos_usuario_perfil(user)
 
-@router.get("/me", response=UsuarioSchema, auth=JWTAuth())
+@router.get("/me", response=PerfilSchema, auth=JWTAuth())
 def obtener_mi_perfil(request):
     """Obtener el perfil del usuario autenticado"""
     return obtener_datos_usuario_perfil(request.user)

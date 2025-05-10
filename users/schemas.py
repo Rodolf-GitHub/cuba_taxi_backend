@@ -66,6 +66,7 @@ class PerfilSchema(Schema):
     capacidad_pasajeros: Optional[int] = None
     disponibilidad: EstadoDisponibilidad
     ultima_disponibilidad: datetime
+    tiempo_disponibilidad_restante: Optional[int] = None  # en minutos
     telefono: Optional[str] = None
     municipio_id: Optional[str] = None
     municipio_nombre: Optional[str] = None
