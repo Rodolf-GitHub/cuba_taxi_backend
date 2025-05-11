@@ -58,36 +58,30 @@ admin.site.register(Profile, ProfileAdmin)
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
-    verbose_name_plural = 'Perfiles'
-    fields = ['tipo_vehiculo', 'disponibilidad', 'ultima_disponibilidad', 'telefono', 'municipio_id', 'profile_picture', 'foto_vehiculo']
-    readonly_fields = ['ultima_disponibilidad']
+    fieldsets = (
+        (None, {
+            'fields': ('profile_picture', 'foto_vehiculo', 'telefono', 'municipio_id')
+        }),
+        ('Información del Vehículo', {
+            'fields': ('tipo_vehiculo', 'capacidad_pasajeros')
+        }),
+        ('Estado', {
+            'fields': ('disponibilidad', 'ultima_disponibilidad')
+        }),
+        ('Licencia', {
+            'fields': ('fecha_ultima_licencia', 'dias_licencia'),
+            'description': 'Configure los días de licencia y la fecha de última actualización'
+        })
+    )
 
 # Redefine el UserAdmin para incluir el perfil
 class UserAdmin(BaseUserAdmin):
     inlines = (ProfileInline,)
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_vehicle_type', 'get_availability')
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'profile__tipo_vehiculo', 'profile__disponibilidad')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'get_dias_restantes')
     
-    def get_vehicle_type(self, obj):
-        """Obtener el tipo de vehículo desde el perfil"""
-        return obj.profile.tipo_vehiculo if hasattr(obj, 'profile') else "-"
-    get_vehicle_type.short_description = "Tipo Vehículo"
-    
-    def get_availability(self, obj):
-        """Obtener la disponibilidad desde el perfil"""
-        if not hasattr(obj, 'profile'):
-            return "-"
-        
-        disponibilidad = obj.profile.disponibilidad
-        if disponibilidad == 'DISPONIBLE':
-            color = 'green'
-        elif disponibilidad == 'OCUPADO':
-            color = 'orange'
-        else:
-            color = 'red'
-        
-        return format_html('<span style="color:{};">{}</span>', color, disponibilidad)
-    get_availability.short_description = "Disponibilidad"
+    def get_dias_restantes(self, obj):
+        return obj.profile.dias_restantes_licencia()
+    get_dias_restantes.short_description = 'Días de Licencia Restantes'
 
 # Re-registrar UserAdmin
 admin.site.unregister(User)

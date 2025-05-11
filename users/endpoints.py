@@ -102,33 +102,37 @@ def actualizar_mi_perfil(request, data: ActualizarPerfilSchema, profile_picture:
 
 @router.get("", response=List[ListaUsuariosSchema])
 def listar_usuarios(request):
-    """Listar todos los usuarios excepto superusuarios"""
-    # Excluimos a los superusuarios de la lista
+    """Listar todos los usuarios excepto superusuarios y con licencia vigente"""
+    # Excluimos a los superusuarios
     users = User.objects.filter(is_superuser=False).order_by('-date_joined')
     
     result = []
     for user in users:
-        # Crear un diccionario simple con la estructura que coincide con ListaUsuariosSchema
-        user_dict = {
-            "id": user.id,
-            "username": user.username,
-            "profile_picture": user.profile.profile_picture.url if user.profile.profile_picture else None,
-            "tipo_vehiculo": user.profile.tipo_vehiculo,
-            "capacidad_pasajeros": user.profile.capacidad_pasajeros,
-            "disponibilidad": user.profile.disponibilidad,
-            "telefono": user.profile.telefono,
-            "municipio_id": user.profile.municipio_id
-        }
-        
-        # Añadir información del municipio y provincia si existe
-        if user.profile.municipio_id:
-            municipio_info = get_municipio(user.profile.municipio_id)
-            if municipio_info:
-                user_dict["municipio_nombre"] = municipio_info["nombre"]
-                user_dict["provincia_id"] = municipio_info["provincia_id"]
-                user_dict["provincia_nombre"] = municipio_info["provincia_nombre"]
-        
-        result.append(user_dict)
+        # Solo incluir usuarios con licencia vigente
+        if user.profile.licencia_vigente():
+            user_dict = {
+                "id": user.id,
+                "username": user.username,
+                "profile_picture": user.profile.profile_picture.url if user.profile.profile_picture else None,
+                "tipo_vehiculo": user.profile.tipo_vehiculo,
+                "capacidad_pasajeros": user.profile.capacidad_pasajeros,
+                "disponibilidad": user.profile.disponibilidad,
+                "telefono": user.profile.telefono,
+                "municipio_id": user.profile.municipio_id,
+                "fecha_ultima_licencia": user.profile.fecha_ultima_licencia,
+                "dias_licencia": user.profile.dias_licencia,
+                "dias_restantes_licencia": user.profile.dias_restantes_licencia()
+            }
+            
+            # Añadir información del municipio y provincia si existe
+            if user.profile.municipio_id:
+                municipio_info = get_municipio(user.profile.municipio_id)
+                if municipio_info:
+                    user_dict["municipio_nombre"] = municipio_info["nombre"]
+                    user_dict["provincia_id"] = municipio_info["provincia_id"]
+                    user_dict["provincia_nombre"] = municipio_info["provincia_nombre"]
+            
+            result.append(user_dict)
     
     return result
 

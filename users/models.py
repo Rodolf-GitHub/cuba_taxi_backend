@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from datetime import timedelta
 
 class Profile(models.Model):
     """Perfil extendido para los usuarios de CubaTaxi"""
@@ -33,6 +34,9 @@ class Profile(models.Model):
     disponibilidad = models.CharField(max_length=20, choices=ESTADO_DISPONIBILIDAD, default='DISPONIBLE')
     ultima_disponibilidad = models.DateTimeField(default=timezone.now)
     capacidad_pasajeros = models.IntegerField(default=4)
+    # Nuevos campos para la licencia
+    fecha_ultima_licencia = models.DateTimeField(default=timezone.now)
+    dias_licencia = models.IntegerField(default=30)  # Por defecto 30 días
     
     def __str__(self):
         return f"Perfil de {self.user.username}"
@@ -42,6 +46,21 @@ class Profile(models.Model):
         self.disponibilidad = 'DISPONIBLE'
         self.ultima_disponibilidad = timezone.now()
         self.save()
+
+    def licencia_vigente(self):
+        """Verifica si la licencia está vigente"""
+        if not self.fecha_ultima_licencia:
+            return False
+        fecha_vencimiento = self.fecha_ultima_licencia + timedelta(days=self.dias_licencia)
+        return timezone.now() <= fecha_vencimiento
+
+    def dias_restantes_licencia(self):
+        """Calcula los días restantes de licencia"""
+        if not self.fecha_ultima_licencia:
+            return 0
+        fecha_vencimiento = self.fecha_ultima_licencia + timedelta(days=self.dias_licencia)
+        dias = (fecha_vencimiento - timezone.now()).days
+        return max(0, dias)
 
 # Señal para crear automáticamente un perfil cuando se crea un usuario
 @receiver(post_save, sender=User)

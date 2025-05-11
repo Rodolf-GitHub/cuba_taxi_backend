@@ -130,10 +130,9 @@ def obtener_datos_usuario_perfil(user):
     if user.is_superuser:
         return None
     
-    # Calcular tiempo restante
+    # Calcular tiempo restante de disponibilidad
     tiempo_restante = calcular_tiempo_restante(user.profile.ultima_disponibilidad)
     
-    # Datos básicos
     data = {
         "id": user.id,
         "username": user.username,
@@ -145,13 +144,16 @@ def obtener_datos_usuario_perfil(user):
         "foto_vehiculo": user.profile.foto_vehiculo.url if user.profile.foto_vehiculo else None,
         "tipo_vehiculo": user.profile.tipo_vehiculo,
         "capacidad_pasajeros": user.profile.capacidad_pasajeros,
-        "disponibilidad": user.profile.disponibilidad,
+        "disponibilidad": user.profile.disponibilidad,  # Ya no modificamos el estado
         "ultima_disponibilidad": user.profile.ultima_disponibilidad,
-        "tiempo_disponibilidad_restante": tiempo_restante,  # Añadido aquí
+        "tiempo_disponibilidad_restante": tiempo_restante,
+        "fecha_ultima_licencia": user.profile.fecha_ultima_licencia,
+        "dias_licencia": user.profile.dias_licencia,
+        "dias_restantes_licencia": user.profile.dias_restantes_licencia(),
         "municipio_id": user.profile.municipio_id
     }
     
-    # Añadir información del municipio y provincia si existe
+    # Añadir información del municipio y provincia
     if user.profile.municipio_id:
         municipio_info = get_municipio(user.profile.municipio_id)
         if municipio_info:
