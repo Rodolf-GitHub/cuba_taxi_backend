@@ -167,7 +167,7 @@ def cambiar_estado_usuario(request, data: CambiarEstadoSchema):
     response={200: MensajeRespuestaSchema, 400: MensajeRespuestaSchema}, 
     auth=JWTAuth()
 )
-def cambiar_password(request, data: CambiarPasswordSchema):
+def cambiar_password_endpoint(request, data: CambiarPasswordSchema):
     """Cambiar la contraseña del usuario autenticado"""
     # Verificar que las contraseñas nuevas coincidan
     if data.password_nueva != data.confirmar_password:
@@ -177,7 +177,7 @@ def cambiar_password(request, data: CambiarPasswordSchema):
     if len(data.password_nueva) < 8:
         return 400, {"mensaje": "La contraseña debe tener al menos 8 caracteres"}
     
-    # Cambiar la contraseña
+    # Cambiar la contraseña usando el servicio
     success, message = cambiar_password(
         user=request.user,
         password_actual=data.password_actual,
